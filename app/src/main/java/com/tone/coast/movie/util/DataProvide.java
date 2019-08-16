@@ -1,12 +1,12 @@
 package com.tone.coast.movie.util;
 
 
-import com.tone.coast.movie.model.BannerEntity;
-import com.tone.coast.movie.model.ChannelEntity;
-import com.tone.coast.movie.model.DataResult;
-import com.tone.coast.movie.model.HomeEntity;
-import com.tone.coast.movie.model.HomeItemEntity;
-import com.tone.coast.movie.model.MovieEntity;
+import com.tone.coast.movie.model.entity.BannerEntity;
+import com.tone.coast.movie.model.entity.ChannelEntity;
+import com.tone.coast.movie.model.entity.DataResult;
+import com.tone.coast.movie.model.entity.HomeEntity;
+import com.tone.coast.movie.model.entity.HomeItemEntity;
+import com.tone.coast.movie.model.entity.MovieEntity;
 
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
@@ -31,7 +31,15 @@ public class DataProvide {
                 .create(new ObservableOnSubscribe<DataResult<HomeEntity>>() {
                     @Override
                     public void subscribe(ObservableEmitter<DataResult<HomeEntity>> emitter) throws Exception {
-                        Document document = Jsoup.connect(BASE_URL).timeout(5000).post();
+                        Document document = Jsoup
+                                .connect(BASE_URL)
+                                .header("cache-control","no-cache")
+                                .header("Postman-Token","63dcdb61-b927-4b6c-8d4b-d112482a802a")
+//                                .header("accept-language","zh-CN,zh;q=0.9,en-US;q=0.8,en;q=0.7")
+//                                .header("Content-Type", "application/json;charset=UTF-8")
+//                                .header("User-Agent", "Mozilla/5.0 (Linux; Android 8.0; Pixel 2 Build/OPD3.170816.012) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/76.0.3809.100 Mobile Safari/537.36")
+                                .timeout(10000)
+                                .get();
                         HomeEntity homeEntity = new HomeEntity();
 
                         Elements banners = document.select("ul[class=focusList] > li");
@@ -83,9 +91,19 @@ public class DataProvide {
                                 for (Element element : subs) {
                                     String movieName = element.select("a").attr("title");
                                     String movieUrl = element.select("a").attr("href");
+                                    String movieImage = element.select("div[class=picsize] > img").attr("src");
+                                    String label = element.select("div[class=picsize]  label[class=title]").text();
+                                    String score = element.select("div[class=picsize]  label[class=score]").text();
+                                    String status = element.select("div[class=picsize]  label[class=status]").text();
+
                                     MovieEntity movieEntity = new MovieEntity();
                                     movieEntity.name = movieName;
-                                    movieEntity.image = BASE_URL + movieUrl;
+                                    movieEntity.url = BASE_URL + movieUrl;
+                                    movieEntity.image = BASE_URL + movieImage;
+                                    movieEntity.label=label;
+                                    movieEntity.score=score;
+                                    movieEntity.status=status;
+
                                     movies.add(movieEntity);
                                 }
                                 entity.movies = movies;
@@ -107,11 +125,7 @@ public class DataProvide {
                 .onErrorResumeNext(new Function<Throwable, ObservableSource<DataResult<HomeEntity>>>() {
                     @Override
                     public ObservableSource<DataResult<HomeEntity>> apply(Throwable throwable) throws Exception {
-                        DataResult<HomeEntity> result = new DataResult<>();
-                        result.data = null;
-                        result.code = 400;
-                        result.msg = "拉取失败";
-                        return Observable.just(result);
+                        return HttpExceptionApi.handleException(throwable);
                     }
                 });
     }

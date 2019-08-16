@@ -1,4 +1,4 @@
-package com.tone.coast.movie.model;
+package com.tone.coast.movie.model.entity;
 
 import java.io.Serializable;
 
